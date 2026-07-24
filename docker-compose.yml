@@ -1,0 +1,45 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sandeshx
+      POSTGRES_USER: sandeshx
+      POSTGRES_PASSWORD: sandeshx
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: sandeshx
+      MINIO_ROOT_PASSWORD: sandeshx-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes: ["miniodata:/data"]
+
+  backend:
+    build: .
+    depends_on: [postgres, redis, minio]
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/sandeshx
+      DATABASE_USER: sandeshx
+      DATABASE_PASSWORD: sandeshx
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: sandeshx
+      MINIO_SECRET_KEY: sandeshx-secret
+      JWT_SECRET: "change-this-to-a-long-random-value-before-deploying"
+      ALLOWED_ORIGIN: ""
+    ports: ["8080:8080"]
+
+volumes:
+  pgdata:
+  miniodata:
